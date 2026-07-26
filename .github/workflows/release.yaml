@@ -1,0 +1,35 @@
+name: Release Configuration
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Crossplane CLI
+        run: |
+          curl -sL https://raw.githubusercontent.com/crossplane/crossplane/main/install.sh | sh
+          sudo mv crossplane /usr/local/bin/
+
+      - name: Build package
+        run: |
+          crossplane xpkg build \
+            --ignore="examples/*,.github/workflows/*" \
+            --package-file=package.xpkg
+
+      - name: Login to registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io \
+            --username "${{ github.actor }}" \
+            --password-stdin
+
+      - name: Push package
+        run: |
+          crossplane xpkg push \
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }} \
+            -f package.xpkg

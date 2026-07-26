@@ -1,0 +1,11 @@
+apiVersion: database.example.org/v1alpha1
+kind: Database
+metadata:
+  name: my-app-db
+  namespace: default
+spec:
+  parameters:
+    storageGB: 2
+  compositionSelector:
+    matchLabels:
+      provider: kubernetes

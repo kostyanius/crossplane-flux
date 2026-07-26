@@ -1,0 +1,144 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xdatabases.local.database.example.org
+  labels:
+    provider: kubernetes
+spec:
+  compositeTypeRef:
+    apiVersion: database.example.org/v1alpha1
+    kind: XDatabase
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+
+          - name: postgres-pvc
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: kubernetes-provider
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: PersistentVolumeClaim
+                    metadata:
+                      namespace: default
+                    spec:
+                      accessModes: ["ReadWriteOnce"]
+                      resources:
+                        requests:
+                          storage: 1Gi
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%s-pvc"
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.parameters.storageGB
+                toFieldPath: spec.forProvider.manifest.spec.resources.requests.storage
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%.0fGi"
+
+          - name: postgres-deployment
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: kubernetes-provider
+                forProvider:
+                  manifest:
+                    apiVersion: apps/v1
+                    kind: Deployment
+                    metadata:
+                      namespace: default
+                    spec:
+                      replicas: 1
+                      selector:
+                        matchLabels:
+                          app: postgres
+                      template:
+                        metadata:
+                          labels:
+                            app: postgres
+                        spec:
+                          containers:
+                            - name: postgres
+                              image: postgres:16
+                              ports:
+                                - containerPort: 5432
+                              env:
+                                - name: POSTGRES_USER
+                                  value: appuser
+                                - name: POSTGRES_PASSWORD
+                                  value: apppass
+                                - name: POSTGRES_DB
+                                  value: appdb
+                              volumeMounts:
+                                - name: data
+                                  mountPath: /var/lib/postgresql/data
+                          volumes:
+                            - name: data
+                              persistentVolumeClaim:
+                                claimName: placeholder-pvc
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%s-deploy"
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%s-pvc"
+
+          - name: postgres-service
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                providerConfigRef:
+                  name: kubernetes-provider
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Service
+                    metadata:
+                      namespace: default
+                    spec:
+                      selector:
+                        app: postgres
+                      ports:
+                        - port: 5432
+                          targetPort: 5432
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.forProvider.manifest.metadata.name
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%s-svc"
