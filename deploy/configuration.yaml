@@ -1,6 +1,6 @@
 apiVersion: pkg.crossplane.io/v1
 kind: Configuration
 metadata:
-  name: my-configuration
+  name: crossplane-flux
 spec:
-  package: ghcr.io/kostyanius/my-configuration:v0.1.2
+  package: ghcr.io/kostyanius/crossplane-flux:v0.1.2

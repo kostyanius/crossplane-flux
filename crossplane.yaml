@@ -1,7 +1,7 @@
 apiVersion: meta.pkg.crossplane.io/v1
 kind: Configuration
 metadata:
-  name: my-configuration
+  name: crossplane-flux
   annotations:
     meta.crossplane.io/maintainer: "Kostyanius <you@example.com>"
     meta.crossplane.io/source: "github.com/<your-org>/my-configuration"
