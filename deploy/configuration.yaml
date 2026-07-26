@@ -3,4 +3,4 @@ kind: Configuration
 metadata:
   name: crossplane-flux
 spec:
-  package: ghcr.io/kostyanius/crossplane-flux:v0.1.2
+  package: ghcr.io/kostyanius/crossplane-flux:v0.1.2 # {"$imagepolicy": "flux-system:crossplane-flux"}

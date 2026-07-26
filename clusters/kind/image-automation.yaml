@@ -1,0 +1,46 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: crossplane-flux
+  namespace: flux-system
+spec:
+  image: ghcr.io/kostyanius/crossplane-flux
+  interval: 1m
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: crossplane-flux
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: crossplane-flux
+  policy:
+    semver:
+      range: ">=0.1.0"
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta1
+kind: ImageUpdateAutomation
+metadata:
+  name: crossplane-flux
+  namespace: flux-system
+spec:
+  interval: 1m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        email: fluxcdbot@users.noreply.github.com
+        name: fluxcdbot
+      messageTemplate: |
+        Auto-update crossplane-flux image to {{range .Updated.Images}}{{println .}}{{end}}
+    push:
+      branch: main
+  update:
+    path: ./deploy
+    strategy: Setters
